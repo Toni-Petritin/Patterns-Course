@@ -5,85 +5,131 @@ using UnityEngine;
 public class Move : MonoBehaviour
 {
     [SerializeField] private Rigidbody rb;
-    public float speed = 2;
-    public float jumpForce = 10;
 
     // Commands:
     Command cmd_W = new MoveForwardCommand();
     Command cmd_S = new MoveBackCommand();
     Command cmd_D = new MoveRightCommand();
     Command cmd_A = new MoveLeftCommand();
-    Command cmd_up = new JumpCommand();
-    Command cmd_down = new MoveCommand();
 
-    Command _last_command = null;
+    private Stack<Command> _undoStack = new Stack<Command>();
+    private Stack<Command> _redoStack = new Stack<Command>();
 
-    Stack<Command> _undo_commands = new Stack<Command>();
-
-    // _undocommands.Push();
-    // Command cmd = _undo_commands.Pop();
-
-    void SwapCommands(ref Command A, ref Command B)
-    {
-        Command tmp = A;
-
-        A = B;
-        B = tmp;
-    }
-
+    private bool replaying = false;
+    private int replayCounter = 0;
+    private float replayInterval = .1f;
+    private float timer = 0;
+    
     void Update()
     {
+        if (!replaying)
+        {
 
-        if (Input.GetKeyDown(KeyCode.W))
-        {
-            cmd_W.Execute(rb);
-            _last_command = cmd_W;
-            //rb.AddForce(transform.forward * speed);
-        }
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            cmd_A.Execute(rb);
-            _last_command = cmd_A;
-            //rb.AddForce(-transform.right * speed);
-        }
-        if (Input.GetKeyDown(KeyCode.D))
-        {
-            cmd_D.Execute(rb);
-            _last_command = cmd_D;
-            //rb.AddForce(transform.right * speed);
-        }
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            cmd_S.Execute(rb);
-            _last_command = cmd_S;
-            //rb.AddForce(-transform.forward * speed);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            cmd_up.Execute(rb);
-            _last_command = cmd_up;
-            //rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
-        }
-        if (Input.GetKeyDown(KeyCode.LeftControl))
-        {
-            cmd_down.Execute(rb);
-            _last_command = cmd_down;
-        }
-
-        if (Input.GetKeyDown(KeyCode.Z))
-        {
-            if (_last_command != null)
+            if (Input.GetKeyDown(KeyCode.W))
             {
-                _last_command.Undo(rb);
-                _last_command = new DoNothingCommand();
+                cmd_W.Execute(rb);
+                _undoStack.Push(cmd_W);
+                _redoStack.Clear();
+            }
+
+            if (Input.GetKeyDown(KeyCode.A))
+            {
+                cmd_A.Execute(rb);
+                _undoStack.Push(cmd_A);
+                _redoStack.Clear();
+            }
+
+            if (Input.GetKeyDown(KeyCode.D))
+            {
+                cmd_D.Execute(rb);
+                _undoStack.Push(cmd_D);
+                _redoStack.Clear();
+            }
+
+            if (Input.GetKeyDown(KeyCode.S))
+            {
+                cmd_S.Execute(rb);
+                _undoStack.Push(cmd_S);
+                _redoStack.Clear();
+            }
+
+            // Undo
+            if (Input.GetKeyDown(KeyCode.Z))
+            {
+                UndoCommand();
+            }
+
+            // Redo
+            if (Input.GetKeyDown(KeyCode.X))
+            {
+                RedoCommand();
+            }
+
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                replaying = true;
+                while (_undoStack.Count != 0)
+                {
+                    Command cmd = _undoStack.Pop();
+                    cmd.Undo(rb);
+                    _redoStack.Push(cmd);
+                    replayCounter++;
+                }
+            }
+            
+            if (Input.GetKeyDown((KeyCode.Escape)))
+            {
+                SwapCommands(ref cmd_A, ref cmd_D);
+                //rb.AddForce(-transform.up * jumpForce, ForceMode.Impulse);
             }
         }
-
-        if (Input.GetKeyDown((KeyCode.Escape)))
+        else
         {
-            SwapCommands(ref cmd_A, ref cmd_D);
-            //rb.AddForce(-transform.up * jumpForce, ForceMode.Impulse);
+            timer += Time.deltaTime;
+            if (timer >= replayInterval)
+            {
+                timer = 0;
+                if (replayCounter > 0)
+                {
+                    replayCounter--;
+                    Command cmd = _redoStack.Pop();
+                    cmd.Execute(rb);
+                    _undoStack.Push(cmd);
+                }
+                else
+                {
+                    replaying = false;
+                }
+            }
         }
+        
+        
+    }
+
+    void UndoCommand()
+    {
+        if (_undoStack.Count != 0)
+        {
+            Command cmd = _undoStack.Pop();
+            cmd.Undo(rb);
+            _redoStack.Push(cmd);
+        }
+    }
+
+    void RedoCommand()
+    {
+        if (_redoStack.Count != 0)
+        {
+            Command cmd = _redoStack.Pop();
+            cmd.Execute(rb);
+            _undoStack.Push(cmd);
+        }
+    }
+    
+    void SwapCommands(ref Command a, ref Command b)
+    {
+        Command tmp = a;
+        a = b;
+        b = tmp;
     }
 }
