@@ -75,6 +75,9 @@ public class Move : MonoBehaviour
                     _redoStack.Push(cmd);
                     replayCounter++;
                 }
+                // optional
+                //StartCoroutine(Replay());
+
             }
             
             if (Input.GetKeyDown((KeyCode.Escape)))
@@ -102,8 +105,6 @@ public class Move : MonoBehaviour
                 }
             }
         }
-        
-        
     }
 
     void UndoCommand()
@@ -132,4 +133,24 @@ public class Move : MonoBehaviour
         a = b;
         b = tmp;
     }
+
+    // optional
+    IEnumerator Replay()
+    {
+        int r = 0;
+        while (_undoStack.Count > 0)
+        {
+            UndoCommand();
+            r++;
+        }
+
+        while (r > 0)
+        {
+            r--;
+            RedoCommand();
+            yield return new WaitForSeconds(.5f);
+        }
+        replaying = false;
+    }
+
 }
