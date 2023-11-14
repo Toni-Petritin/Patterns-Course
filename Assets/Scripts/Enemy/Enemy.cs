@@ -1,20 +1,21 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
-public class Coin : MonoBehaviour {
+public class Enemy : MonoBehaviour
+{
     // The event / action "list" that has all "observers" registered
-    public static event Action OnCoinCollected;
+    public static event Action OnEnemyDestroyed;
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.layer == 6)
         {
-            Collected();
+            DestroyedByPlayer();
             Destroy(this.gameObject);
         }
     }
 
-    private void Collected() {
-        OnCoinCollected?.Invoke();
+    private void DestroyedByPlayer() {
+        OnEnemyDestroyed?.Invoke();
     }
 }
