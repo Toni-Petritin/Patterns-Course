@@ -4,6 +4,19 @@ using UnityEngine;
 
 public class Move : MonoBehaviour
 {
+    enum PlayerState
+    {
+        JUMPING,
+        STANDING,
+        CROUCHING,
+        REPLAYING
+    }
+
+    [SerializeField]
+    private PlayerState my_state = PlayerState.JUMPING;
+
+    public float jumpForce = 10;
+
     [SerializeField] private Rigidbody rb;
 
     // Commands:
@@ -19,11 +32,40 @@ public class Move : MonoBehaviour
     private int replayCounter = 0;
     private float replayInterval = .1f;
     private float timer = 0;
-    
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        
+    }
+
+
     void Update()
     {
         if (!replaying)
         {
+            // jump
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                rb.AddForce(new Vector3(0,1,0) * jumpForce, ForceMode.Impulse);
+            }
+
+            // crouch
+            if (Input.GetKeyDown(KeyCode.LeftControl))
+            {
+
+            }
+            
+            switch (my_state)
+            {
+                case PlayerState.JUMPING:
+                    break;
+                case PlayerState.STANDING:
+                    break;
+                case PlayerState.CROUCHING:
+                    break;
+            }
+            
+
 
             if (Input.GetKeyDown(KeyCode.W))
             {
